@@ -1,0 +1,5 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "cmake.sourceDirectory": "C:/Users/pc/AndroidStudioProjects/Hedieaty/windows/flutter",
+    "java.configuration.updateBuildConfiguration": "interactive"
+}

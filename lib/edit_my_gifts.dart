@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
+class EditGiftDetailsPage extends StatefulWidget {
+  const EditGiftDetailsPage({super.key});
+
+  @override
+  _editGiftDetailsPageState createState() => _editGiftDetailsPageState();
+}
+
+class _editGiftDetailsPageState extends State<EditGiftDetailsPage> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  bool _isPledged = false;
+  File? _image;
+
+  Future<void> _pickImage() async {
+    final pickedFile =
+    await ImagePicker().pickImage(source: ImageSource.gallery);
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      }
+    });
+  }
+
+  void _saveGiftDetails() {
+    // Placeholder for saving gift details
+    print('Save gift details');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Gift Details'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            TextField(
+              controller: _categoryController,
+              decoration: const InputDecoration(labelText: 'Category'),
+            ),
+            TextField(
+              controller: _priceController,
+              decoration: const InputDecoration(labelText: 'Price'),
+            ),
+            SwitchListTile(
+              title: const Text('Pledged'),
+              value: _isPledged,
+              onChanged: (bool value) {
+                setState(() {
+                  _isPledged = value;
+                });
+              },
+            ),
+            _image == null
+                ? TextButton(
+              onPressed: _pickImage,
+              child: const Text('Upload Image'),
+            )
+                : Image.file(_image!),
+            ElevatedButton(
+              onPressed: _saveGiftDetails,
+              child: const Text('Edit'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
