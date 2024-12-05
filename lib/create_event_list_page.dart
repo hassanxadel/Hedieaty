@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateEventListPage extends StatefulWidget {
   const CreateEventListPage({super.key});
@@ -24,6 +25,25 @@ class _CreateEventListPageState extends State<CreateEventListPage> {
       setState(() {
         _selectedDate = picked;
       });
+    }
+  }
+
+  Future<void> _saveEventDetails() async {
+    if (_nameController.text.isNotEmpty &&
+        _categoryController.text.isNotEmpty &&
+        _statusController.text.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('my_events').add({
+        'name': _nameController.text,
+        'category': _categoryController.text,
+        'status': _statusController.text,
+        'date': _selectedDate?.toIso8601String(),
+      });
+      Navigator.pop(context); // Go back after saving
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
     }
   }
 
@@ -65,19 +85,11 @@ class _CreateEventListPageState extends State<CreateEventListPage> {
                 ),
               ],
             ),
+            ElevatedButton(
+              onPressed: _saveEventDetails,
+              child: const Text('Add Event'),
+            ),
           ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              // Add event logic here
-            },
-            child: const Text('Add Event'),
-          ),
         ),
       ),
     );

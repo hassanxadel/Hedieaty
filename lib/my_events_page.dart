@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
 class MyEventsPage extends StatefulWidget {
   const MyEventsPage({super.key});
@@ -8,16 +9,25 @@ class MyEventsPage extends StatefulWidget {
 }
 
 class _MyEventsPageState extends State<MyEventsPage> {
-  List<Map<String, dynamic>> events = [
-    {'name': 'Birthday', 'category': 'Personal', 'status': 'Upcoming'},
-    {'name': 'Wedding', 'category': 'Family', 'status': 'Current'},
-    {'name': 'Graduation', 'category': 'Academic', 'status': 'Past'},
-  ];
+  final FirestoreService _firestoreService = FirestoreService();
+  List<Map<String, dynamic>> events = [];
 
-  void _deleteEvent(int index) {
-    setState(() {
-      events.removeAt(index);
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+  }
+
+  void _fetchEvents() {
+    _firestoreService.getUserEvents().listen((eventList) {
+      setState(() {
+        events = eventList;
+      });
     });
+  }
+
+  void _deleteEvent(String id) {
+    _firestoreService.deleteEvent(id);
   }
 
   @override
@@ -70,7 +80,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteEvent(index),
+                        onPressed: () => _deleteEvent(events[index]['id']),
                       ),
                     ],
                   ),

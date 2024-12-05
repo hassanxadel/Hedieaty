@@ -13,7 +13,6 @@ import 'profile_page.dart';
 import 'add_friend_page.dart';
 import 'edit_my_gifts.dart';
 import 'edit_event_list.dart';
-import 'signup_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +26,7 @@ void main() async {
       '/giftDetails': (context) => const GiftDetailsPage(),
       '/gifts': (context) => const GiftListPage(),
       '/home': (context) => const HomePage(),
-      '/login': (context) => const LoginPage(),
+      '/signup': (context) => const SignupPage(),
       '/myEvents': (context) => const MyEventsPage(),
       '/myGifts': (context) => const MyGiftListPage(),
       '/pledgedGifts': (context) => const MyPledgedGiftsPage(),
@@ -35,7 +34,6 @@ void main() async {
       '/addFriend': (context) => const AddFriendPage(),
       '/editMyGifts': (context) => const EditGiftDetailsPage(),
       '/editEvents': (context) => const EditEventDetailsPage(),
-      '/signup': (context) => const SignupPage(),
     },
   ));
 }
