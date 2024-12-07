@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import '../local database/database_helper.dart';
 
 class MyGiftListPage extends StatefulWidget {
   const MyGiftListPage({super.key});

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -8,46 +9,41 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> friends = [
-    {'name': 'Hassan', 'events': 2, 'image': 'ahmed.jpeg'},
-    {'name': 'Fatma', 'events': 4, 'image': 'sara.jpeg'},
-    {'name': 'Mohamed', 'events': 1, 'image': 'mohamed.jpeg'},
-    {'name': 'Khaled', 'events': 3, 'image': 'khaled.jpeg'},
-    {'name': 'Omar', 'events': 2, 'image': 'omar.jpeg'},
-    {'name': 'Ramy', 'events': 3, 'image': 'ramy.jpeg'},
-    {'name': 'Youssef', 'events': 1, 'image': 'youssef.jpeg'},
-    {'name': 'Nour', 'events': 4, 'image': 'nour.jpeg'},
-  ];
-
-  // Search controller
-  TextEditingController searchController = TextEditingController();
-
-  // Filtered list of friends
+  final FirestoreService _firestoreService = FirestoreService();
+  List<Map<String, dynamic>> friends = [];
   List<Map<String, dynamic>> filteredFriends = [];
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    filteredFriends = friends; // Initially, all friends are shown
+    _setupFriendsListener();
     searchController.addListener(() {
       filterFriends();
     });
   }
 
-  void filterFriends() {
-    List<Map<String, dynamic>> results = [];
-    if (searchController.text.isEmpty) {
-      results = friends;
-    } else {
-      results = friends
-          .where((friend) => friend['name']
-              .toLowerCase()
-              .contains(searchController.text.toLowerCase()))
-          .toList();
-    }
+  void _setupFriendsListener() {
+    _firestoreService.getFriends().listen((friendsList) {
+      setState(() {
+        friends = friendsList;
+        filterFriends(); // Update filtered list whenever friends list changes
+      });
+    });
+  }
 
+  void filterFriends() {
     setState(() {
-      filteredFriends = results;
+      if (searchController.text.isEmpty) {
+        filteredFriends = List.from(friends);
+      } else {
+        filteredFriends = friends
+            .where((friend) => friend['name']
+                .toString()
+                .toLowerCase()
+                .contains(searchController.text.toLowerCase()))
+            .toList();
+      }
     });
   }
 
@@ -68,11 +64,10 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.person_add),
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/addFriend');
-                  }
-                ),
+                    icon: const Icon(Icons.person_add),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/addFriend');
+                    }),
               ],
             ),
           ],
@@ -112,8 +107,11 @@ class _HomePageState extends State<HomePage> {
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
-                    Navigator.pushNamed(context, '/events',
-                        arguments: filteredFriends[index]);
+                    Navigator.pushNamed(
+                      context,
+                      '/events',
+                      arguments: {'friendId': friends[index]['id']},
+                    );
                   },
                   child: Container(
                     decoration: BoxDecoration(

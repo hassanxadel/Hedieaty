@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class AddFriendPage extends StatefulWidget {
   const AddFriendPage({super.key});
@@ -8,9 +11,22 @@ class AddFriendPage extends StatefulWidget {
 }
 
 class _AddFriendPageState extends State<AddFriendPage> {
+  final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
+  File? _imageFile;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
 
   void _navigateToContacts() {
     // Logic to navigate to the contact list
@@ -65,9 +81,15 @@ class _AddFriendPageState extends State<AddFriendPage> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              // Logic to add a friend
-              print('Friend added');
+            onPressed: () async {
+              if (_imageFile != null) {
+                final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+                final imageUrl =
+                    await _firestoreService.uploadImage(_imageFile!, fileName);
+                await _firestoreService.addFriend(
+                    _firstNameController.text, imageUrl);
+              }
+              Navigator.pop(context);
             },
             child: const Text('Add Friend'),
           ),

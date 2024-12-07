@@ -1,17 +1,34 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
 class GiftListPage extends StatefulWidget {
-  const GiftListPage({super.key});
+  final String friendId;
+  final String eventId;
+
+  const GiftListPage(
+      {super.key, required this.friendId, required this.eventId});
 
   @override
   _GiftListPageState createState() => _GiftListPageState();
 }
 
 class _GiftListPageState extends State<GiftListPage> {
-  List<Map<String, dynamic>> gifts = [
-    {'name': 'Smart Watch', 'category': 'Electronics', 'status': 'Available'},
-    {'name': 'Book Set', 'category': 'Books', 'status': 'Available'},
-  ];
+  final FirestoreService _firestoreService = FirestoreService();
+  List<Map<String, dynamic>> gifts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _setupGiftsListener(widget.friendId, widget.eventId);
+  }
+
+  void _setupGiftsListener(String friendId, String eventId) {
+    _firestoreService.getEventGifts(friendId, eventId).listen((giftList) {
+      setState(() {
+        gifts = giftList;
+      });
+    });
+  }
 
   void _isPledgedGift(int index) {
     setState(() {

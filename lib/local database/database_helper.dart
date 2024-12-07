@@ -113,6 +113,8 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getUsers() async {
     final db = await database;
-    return await db?.query('users') ?? [];
+    final users = await db?.query('users') ?? [];
+    print('Fetched Users: $users'); // Debugging purpose
+    return users;
   }
 }

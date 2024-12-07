@@ -1,18 +1,32 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
 class EventListPage extends StatefulWidget {
-  const EventListPage({super.key});
+  final String friendId;
+
+  const EventListPage({super.key, required this.friendId});
 
   @override
   _EventListPageState createState() => _EventListPageState();
 }
 
 class _EventListPageState extends State<EventListPage> {
-  List<Map<String, dynamic>> events = [
-    {'name': 'Birthday', 'category': 'Personal', 'status': 'Upcoming'},
-    {'name': 'Wedding', 'category': 'Family', 'status': 'Current'},
-    {'name': 'Graduation', 'category': 'Academic', 'status': 'Past'},
-  ];
+  final FirestoreService _firestoreService = FirestoreService();
+  List<Map<String, dynamic>> events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _setupEventsListener();
+  }
+
+  void _setupEventsListener() {
+    _firestoreService.getFriendEvents(widget.friendId).listen((eventList) {
+      setState(() {
+        events = eventList;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +49,14 @@ class _EventListPageState extends State<EventListPage> {
                 ),
               ),
               onPressed: () {
-                Navigator.pushNamed(context, '/gifts');
+                Navigator.pushNamed(
+                  context,
+                  '/gifts',
+                  arguments: {
+                    'friendId': widget.friendId,
+                    'eventId': events[index]['id'],
+                  },
+                );
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

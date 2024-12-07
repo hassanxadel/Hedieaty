@@ -19,7 +19,8 @@ class AuthService {
   }
 
   // Sign Up
-  Future<User?> signUp(String email, String password, Map<String, String> userDetails) async {
+  Future<User?> signUp(
+      String email, String password, Map<String, String> userDetails) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -27,7 +28,10 @@ class AuthService {
       );
 
       // Save user details in Firestore
-      await _firestore.collection('users').doc(result.user!.uid).set(userDetails);
+      await _firestore
+          .collection('users')
+          .doc(result.user!.uid)
+          .set(userDetails);
 
       return result.user;
     } on FirebaseAuthException catch (e) {
