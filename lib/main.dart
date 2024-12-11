@@ -13,12 +13,17 @@ import 'admin/profile_page.dart';
 import 'users/add_friend_page.dart';
 import 'admin/edit_my_gifts.dart';
 import 'admin/edit_event_list.dart';
+import 'firebase_options.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MaterialApp(
     title: 'Hedieaty',
+    theme: AppTheme.lightTheme,
     initialRoute: '/loginSignup',
     onGenerateRoute: (settings) {
       if (settings.name == '/events') {

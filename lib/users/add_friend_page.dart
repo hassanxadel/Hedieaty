@@ -82,14 +82,35 @@ class _AddFriendPageState extends State<AddFriendPage> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () async {
-              if (_imageFile != null) {
-                final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-                final imageUrl =
-                    await _firestoreService.uploadImage(_imageFile!, fileName);
-                await _firestoreService.addFriend(
-                    _firstNameController.text, imageUrl);
+              if (_firstNameController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a name')),
+                );
+                return;
               }
-              Navigator.pop(context);
+
+              try {
+                String imageUrl =
+                    'assets/images/default_avatar.jpeg'; // Default image
+
+                if (_imageFile != null) {
+                  final fileName =
+                      '${DateTime.now().millisecondsSinceEpoch}_${_firstNameController.text}.jpg';
+                  imageUrl = await _firestoreService.uploadImage(
+                      _imageFile!, fileName);
+                }
+
+                await _firestoreService.addFriend(
+                  _firstNameController.text,
+                  imageUrl,
+                );
+
+                if (mounted) Navigator.pop(context);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error adding friend: $e')),
+                );
+              }
             },
             child: const Text('Add Friend'),
           ),

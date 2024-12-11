@@ -9,18 +9,14 @@ class FirestoreService {
 
   // Get all friends
   Stream<List<Map<String, dynamic>>> getFriends() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return _db
-          .collection('friends')
-          .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                data['id'] = doc.id;
-                return data;
-              }).toList());
-    }
-    return Stream.empty();
+    return _db
+        .collection('friends')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return data;
+            }).toList());
   }
 
   // Add a friend
@@ -31,7 +27,7 @@ class FirestoreService {
         'name': name,
         'events': 0,
         'image': imageUrl,
-        'userId': user.uid,
+        'addedBy': user.uid,
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
@@ -39,9 +35,22 @@ class FirestoreService {
 
   // Add this method to upload image and get URL
   Future<String> uploadImage(File imageFile, String fileName) async {
-    final storageRef = _storage.ref().child('friend_images/$fileName');
-    await storageRef.putFile(imageFile);
-    return await storageRef.getDownloadURL();
+    try {
+      // Create a reference to the file location
+      final Reference ref = _storage.ref().child('friend_images/$fileName');
+
+      // Upload the file
+      final UploadTask uploadTask = ref.putFile(imageFile);
+
+      // Wait for the upload to complete and get the download URL
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      throw Exception('Failed to upload image');
+    }
   }
 
   // Add event to a friend
@@ -61,9 +70,10 @@ class FirestoreService {
         .collection('friends')
         .doc(friendId)
         .collection('events')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
+              final data = doc.data();
               data['id'] = doc.id;
               return data;
             }).toList());
@@ -91,7 +101,7 @@ class FirestoreService {
         .collection('gifts')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
+              final data = doc.data();
               data['id'] = doc.id;
               return data;
             }).toList());
@@ -106,12 +116,12 @@ class FirestoreService {
           .collection('events')
           .snapshots()
           .map((snapshot) => snapshot.docs.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
+                final data = doc.data();
                 data['id'] = doc.id;
                 return data;
               }).toList());
     }
-    return Stream.empty();
+    return const Stream.empty();
   }
 
   Future<void> deleteEvent(String eventId) async {

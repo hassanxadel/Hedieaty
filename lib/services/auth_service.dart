@@ -8,13 +8,13 @@ class AuthService {
   // Sign In
   Future<User?> signIn(String email, String password) async {
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
+      final UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       return result.user;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
+import '../theme/app_theme.dart';
 
 class GiftListPage extends StatefulWidget {
   final String friendId;
@@ -51,7 +52,7 @@ class _GiftListPageState extends State<GiftListPage> {
           PopupMenuButton<String>(
             onSelected: _sortGifts,
             itemBuilder: (BuildContext context) {
-              return {'name', 'category', 'status'}.map((String choice) {
+              return {'name', 'category'}.map((String choice) {
                 return PopupMenuItem<String>(
                   value: choice,
                   child: Text('Sort by $choice'),
@@ -61,27 +62,106 @@ class _GiftListPageState extends State<GiftListPage> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: gifts.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(gifts[index]['name']),
-            subtitle:
-                Text('${gifts[index]['category']} - ${gifts[index]['status']}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () => _isPledgedGift(index),
-                ),
-              ],
-            ),
-            tileColor: gifts[index]['status'] == 'Pledged'
-                ? Colors.lightGreen[100]
-                : null,
-          );
-        },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: gifts.isEmpty
+            ? const Center(
+                child: Text('No gifts found for this event'),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: gifts.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor.withOpacity(0.8),
+                          AppTheme.secondaryColor
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _isPledgedGift(index),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      gifts[index]['name'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      gifts[index]['category'],
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: gifts[index]['status'] == 'Pledged'
+                                      ? Colors.green
+                                      : Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  gifts[index]['status'] ?? 'Available',
+                                  style: TextStyle(
+                                    color: gifts[index]['status'] == 'Pledged'
+                                        ? Colors.white
+                                        : Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
