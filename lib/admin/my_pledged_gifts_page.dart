@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class MyPledgedGiftsPage extends StatefulWidget {
   const MyPledgedGiftsPage({super.key});
@@ -75,39 +76,51 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: pledgedGifts.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(pledgedGifts[index]['name']),
-            subtitle: Text(
-                'Friend: ${pledgedGifts[index]['friend']} - Due: ${pledgedGifts[index]['dueDate']}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.check),
-                  onPressed: () {
-                    if (pledgedGifts[index]['status'] == 'Pending') {
-                      _toggleStatus(index);
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    if (pledgedGifts[index]['status'] == 'Completed') {
-                      _toggleStatus(index);
-                    }
-                  },
-                ),
-              ],
-            ),
-            tileColor: pledgedGifts[index]['status'] == 'Pending'
-                ? Colors.yellow[100]
-                : Colors.green[100],
-          );
-        },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: ListView.builder(
+          itemCount: pledgedGifts.length,
+          itemBuilder: (context, index) {
+            return ListTile(
+              title: Text(pledgedGifts[index]['name']),
+              subtitle: Text(
+                  'Friend: ${pledgedGifts[index]['friend']} - Due: ${pledgedGifts[index]['dueDate']}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.check),
+                    onPressed: () {
+                      if (pledgedGifts[index]['status'] == 'Pending') {
+                        _toggleStatus(index);
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      if (pledgedGifts[index]['status'] == 'Completed') {
+                        _toggleStatus(index);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              tileColor: pledgedGifts[index]['status'] == 'Pending'
+                  ? Colors.yellow[100]
+                  : Colors.green[100],
+            );
+          },
+        ),
       ),
     );
   }

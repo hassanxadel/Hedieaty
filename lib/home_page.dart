@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import 'dart:ui';
 import '../theme/app_theme.dart';
+import '../local database/database_helper.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -85,6 +86,10 @@ class _HomePageState extends State<HomePage> {
         ),
         itemCount: filteredFriends.length,
         itemBuilder: (context, index) {
+          print('Friend name: ${filteredFriends[index]['name']}');
+          print(
+              'Image path: assets/images/${filteredFriends[index]['name'].toLowerCase()}.jpeg');
+
           return GestureDetector(
             onTap: () {
               Navigator.pushNamed(
@@ -137,15 +142,24 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                           ),
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.white,
-                            backgroundImage: filteredFriends[index]['image'] !=
-                                    null
-                                ? NetworkImage(filteredFriends[index]['image'])
-                                : const AssetImage(
-                                        'assets/images/default_avatar.jpeg')
-                                    as ImageProvider,
+                          child: FutureBuilder<String?>(
+                            future: DatabaseHelper()
+                                .getFriendImage(filteredFriends[index]['name']),
+                            builder: (context, snapshot) {
+                              return CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.white,
+                                onBackgroundImageError:
+                                    (exception, stackTrace) {
+                                  print('Error loading image: $exception');
+                                  print('Stack trace: $stackTrace');
+                                },
+                                backgroundImage: snapshot.hasData
+                                    ? AssetImage(snapshot.data!)
+                                    : const AssetImage(
+                                        'assets/images/default_avatar.jpeg'),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -192,44 +206,56 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              // Wrap in a Row to allow multiple children
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Search',
-                      suffixIcon: Icon(Icons.search),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                // Wrap in a Row to allow multiple children
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        labelText: 'Search',
+                        suffixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        filterFriends();
+                      },
                     ),
-                    onChanged: (value) {
-                      filterFriends();
-                    },
                   ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: mainContent,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              width: double.infinity, // Full width button
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/myEvents');
-                },
-                child: const Text('Add Your Own Event/List'),
+                ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: mainContent,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: double.infinity, // Full width button
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/myEvents');
+                  },
+                  child: const Text('Add Your Own Event/List'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

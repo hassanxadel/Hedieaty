@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../local database/database_helper.dart';
+import '../theme/app_theme.dart';
 
 class CreateEventListPage extends StatefulWidget {
   const CreateEventListPage({super.key});
@@ -32,15 +33,15 @@ class _CreateEventListPageState extends State<CreateEventListPage> {
     if (_nameController.text.isNotEmpty &&
         _categoryController.text.isNotEmpty &&
         _statusController.text.isNotEmpty) {
-      await FirebaseFirestore.instance.collection('my_events').add({
+      final event = {
         'name': _nameController.text,
         'category': _categoryController.text,
         'status': _statusController.text,
-        'date': _selectedDate?.toIso8601String(),
-      });
-      Navigator.pop(context); // Go back after saving
+      };
+
+      await DatabaseHelper().insertEvent(event);
+      Navigator.pop(context);
     } else {
-      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
       );
@@ -53,43 +54,55 @@ class _CreateEventListPageState extends State<CreateEventListPage> {
       appBar: AppBar(
         title: const Text('Create Event List'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Event Name'),
-            ),
-            TextField(
-              controller: _categoryController,
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-            TextField(
-              controller: _statusController,
-              decoration: const InputDecoration(labelText: 'Status'),
-            ),
-            const SizedBox(height: 16.0),
-            Row(
-              children: [
-                Text(
-                  _selectedDate == null
-                      ? 'No date selected!'
-                      : 'Selected Date: ${_selectedDate!.toLocal()}'
-                          .split(' ')[0],
-                ),
-                const SizedBox(width: 8.0),
-                ElevatedButton(
-                  onPressed: () => _selectDate(context),
-                  child: const Text('Select Date'),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: _saveEventDetails,
-              child: const Text('Add Event'),
-            ),
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Event Name'),
+              ),
+              TextField(
+                controller: _categoryController,
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+              TextField(
+                controller: _statusController,
+                decoration: const InputDecoration(labelText: 'Status'),
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                children: [
+                  Text(
+                    _selectedDate == null
+                        ? 'No date selected!'
+                        : 'Selected Date: ${_selectedDate!.toLocal()}'
+                            .split(' ')[0],
+                  ),
+                  const SizedBox(width: 8.0),
+                  ElevatedButton(
+                    onPressed: () => _selectDate(context),
+                    child: const Text('Select Date'),
+                  ),
+                ],
+              ),
+              ElevatedButton(
+                onPressed: _saveEventDetails,
+                child: const Text('Add Event'),
+              ),
+            ],
+          ),
         ),
       ),
     );

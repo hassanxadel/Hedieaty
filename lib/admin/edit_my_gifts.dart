@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
+import '../local database/database_helper.dart';
 
 class EditGiftDetailsPage extends StatefulWidget {
-  const EditGiftDetailsPage({super.key});
+  final Map<String, dynamic>? giftData;
+
+  const EditGiftDetailsPage({super.key, this.giftData});
 
   @override
   _editGiftDetailsPageState createState() => _editGiftDetailsPageState();
@@ -11,25 +12,36 @@ class EditGiftDetailsPage extends StatefulWidget {
 
 class _editGiftDetailsPageState extends State<EditGiftDetailsPage> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  bool _isPledged = false;
-  File? _image;
+  final TextEditingController _statusController = TextEditingController();
+  int? giftId;
 
-  Future<void> _pickImage() async {
-    final pickedFile =
-    await ImagePicker().pickImage(source: ImageSource.gallery);
-    setState(() {
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    if (widget.giftData != null) {
+      _nameController.text = widget.giftData!['name'];
+      _categoryController.text = widget.giftData!['category'];
+      _statusController.text = widget.giftData!['status'];
+      giftId = widget.giftData!['id'];
+    }
   }
 
-  void _saveGiftDetails() {
-    // Placeholder for saving gift details
-    print('Save gift details');
+  Future<void> _saveGiftDetails() async {
+    if (_nameController.text.isNotEmpty &&
+        _categoryController.text.isNotEmpty &&
+        _statusController.text.isNotEmpty) {
+      final gift = {
+        'name': _nameController.text,
+        'category': _categoryController.text,
+        'status': _statusController.text,
+      };
+
+      if (giftId != null) {
+        await DatabaseHelper().updateGift(giftId!, gift);
+      }
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -46,32 +58,13 @@ class _editGiftDetailsPageState extends State<EditGiftDetailsPage> {
               decoration: const InputDecoration(labelText: 'Name'),
             ),
             TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
               controller: _categoryController,
               decoration: const InputDecoration(labelText: 'Category'),
             ),
             TextField(
-              controller: _priceController,
-              decoration: const InputDecoration(labelText: 'Price'),
+              controller: _statusController,
+              decoration: const InputDecoration(labelText: 'Status'),
             ),
-            SwitchListTile(
-              title: const Text('Pledged'),
-              value: _isPledged,
-              onChanged: (bool value) {
-                setState(() {
-                  _isPledged = value;
-                });
-              },
-            ),
-            _image == null
-                ? TextButton(
-              onPressed: _pickImage,
-              child: const Text('Upload Image'),
-            )
-                : Image.file(_image!),
             ElevatedButton(
               onPressed: _saveGiftDetails,
               child: const Text('Edit'),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../local database/database_helper.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -20,13 +21,16 @@ class FirestoreService {
   }
 
   // Add a friend
-  Future<void> addFriend(String name, String imageUrl) async {
+  Future<void> addFriend(String name, String imageFileName) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      // Store image path in local database
+      await DatabaseHelper()
+          .storeFriendImage(name.toLowerCase(), 'assets/images/$imageFileName');
+
       await _db.collection('friends').add({
         'name': name,
         'events': 0,
-        'image': imageUrl,
         'addedBy': user.uid,
         'createdAt': FieldValue.serverTimestamp(),
       });

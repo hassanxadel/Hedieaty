@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import '../theme/app_theme.dart';
 
 class AddFriendPage extends StatefulWidget {
   const AddFriendPage({super.key});
@@ -14,19 +13,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _phoneNumberController = TextEditingController();
-  File? _imageFile;
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
 
   void _navigateToContacts() {
     // Logic to navigate to the contact list
@@ -39,41 +25,52 @@ class _AddFriendPageState extends State<AddFriendPage> {
       appBar: AppBar(
         title: const Text('Add Friend'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(
-                labelText: 'First Name',
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _firstNameController,
+                decoration: const InputDecoration(
+                  labelText: 'First Name',
+                ),
               ),
-            ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(
-                labelText: 'Last Name',
+              const SizedBox(height: 16.0),
+              TextField(
+                controller: _lastNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Last Name',
+                ),
               ),
-            ),
-            const SizedBox(height: 16.0),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _phoneNumberController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
+              const SizedBox(height: 16.0),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.contacts),
-                  onPressed: _navigateToContacts,
-                ),
-              ],
-            ),
-          ],
+                  IconButton(
+                    icon: const Icon(Icons.contacts),
+                    onPressed: _navigateToContacts,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
@@ -90,20 +87,24 @@ class _AddFriendPageState extends State<AddFriendPage> {
               }
 
               try {
-                String imageUrl =
-                    'assets/images/default_avatar.jpeg'; // Default image
-
-                if (_imageFile != null) {
-                  final fileName =
-                      '${DateTime.now().millisecondsSinceEpoch}_${_firstNameController.text}.jpg';
-                  imageUrl = await _firestoreService.uploadImage(
-                      _imageFile!, fileName);
+                String imageUrl = 'default_avatar.jpeg'; // Default image
+                if (_firstNameController.text.toLowerCase() == 'ahmed') {
+                  imageUrl = 'ahmed.jpeg';
+                } else if (_firstNameController.text.toLowerCase() == 'nour') {
+                  imageUrl = 'nour.jpeg';
+                } else if (_firstNameController.text.toLowerCase() ==
+                    'hassan') {
+                  imageUrl = 'hassan.jpeg';
+                } else if (_firstNameController.text.toLowerCase() == 'sara') {
+                  imageUrl = 'sara.jpeg';
+                } else if (_firstNameController.text.toLowerCase() ==
+                    'mahmoud') {
+                  imageUrl = 'mahmoud.jpeg';
+                } else if (_firstNameController.text.toLowerCase() == 'tarek') {
+                  imageUrl = 'tarek.jpeg';
                 }
-
                 await _firestoreService.addFriend(
-                  _firstNameController.text,
-                  imageUrl,
-                );
+                    _firstNameController.text, imageUrl);
 
                 if (mounted) Navigator.pop(context);
               } catch (e) {

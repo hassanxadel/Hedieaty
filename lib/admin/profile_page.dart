@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../local database/database_helper.dart';
 import '../theme/app_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'my_gift_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,8 +13,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
-  final String _gender = 'Male';
   bool _notificationsEnabled = false;
+  List<Map<String, dynamic>> events = [];
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
@@ -23,6 +25,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchEvents();
   }
 
   Future<void> _fetchUserData() async {
@@ -38,6 +41,13 @@ class _ProfilePageState extends State<ProfilePage> {
     } else {
       print('No user data found in local database.');
     }
+  }
+
+  Future<void> _fetchEvents() async {
+    final eventList = await DatabaseHelper().getEvents();
+    setState(() {
+      events = eventList;
+    });
   }
 
   @override
@@ -73,13 +83,28 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Icon(Icons.person, size: 50, color: Colors.white),
               ),
               const SizedBox(height: 24),
-              _buildProfileField('First Name', _firstNameController, _isEditing),
+              _buildProfileField(
+                  'First Name', _firstNameController, _isEditing),
               _buildProfileField('Last Name', _lastNameController, _isEditing),
               _buildProfileField('Email', _emailController, _isEditing),
-              _buildProfileField('Birth Date', _birthDateController, _isEditing),
+              _buildProfileField(
+                  'Birth Date', _birthDateController, _isEditing),
               const SizedBox(height: 16),
               _buildSettingsSection(),
               _buildNavigationButtons(context),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () {
+                  FirebaseAuth.instance.signOut();
+                  Navigator.pushReplacementNamed(context, '/loginSignup');
+                },
+                icon: const Icon(Icons.logout, color: Colors.white),
+                label: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
             ],
           ),
         ),
@@ -87,7 +112,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileField(String label, TextEditingController controller, bool isEditing) {
+  Widget _buildProfileField(
+      String label, TextEditingController controller, bool isEditing) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -178,6 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
+
           const SizedBox(height: 16.0),
           GestureDetector(
             onTap: () {
@@ -195,13 +222,21 @@ class _ProfilePageState extends State<ProfilePage> {
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3, // Assuming 3 events as in event_list_page.dart
+            itemCount: events.length,
             itemBuilder: (context, index) {
               return ListTile(
-                title: Text('Event ${index + 1}'),
-                subtitle: const Text('Category - Status'),
+                title: Text(events[index]['name']),
+                subtitle: Text(
+                    '${events[index]['category']} - ${events[index]['status']}'),
                 onTap: () {
-                  Navigator.pushNamed(context, '/myGifts');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyGiftListPage(
+                        eventId: events[index]['id'],
+                      ),
+                    ),
+                  );
                 },
               );
             },

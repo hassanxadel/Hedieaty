@@ -15,12 +15,17 @@ import 'admin/edit_my_gifts.dart';
 import 'admin/edit_event_list.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
+import 'local database/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final dbHelper = DatabaseHelper();
+  await dbHelper.initializeSampleData();
+
   runApp(MaterialApp(
     title: 'Hedieaty',
     theme: AppTheme.lightTheme,
@@ -39,6 +44,26 @@ void main() async {
             eventId: args['eventId'],
           ),
         );
+      } else if (settings.name == '/editEvents') {
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (context) => EditEventDetailsPage(eventData: args),
+        );
+      } else if (settings.name == '/editMyGifts') {
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (context) => EditGiftDetailsPage(giftData: args),
+        );
+      } else if (settings.name == '/myGifts') {
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (context) => MyGiftListPage(eventId: args['eventId']),
+        );
+      } else if (settings.name == '/giftDetails') {
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (context) => GiftDetailsPage(eventId: args['eventId']),
+        );
       }
 
       return null;
@@ -48,13 +73,9 @@ void main() async {
       '/home': (context) => const HomePage(),
       '/profile': (context) => const ProfilePage(),
       '/createEventList': (context) => const CreateEventListPage(),
-      '/giftDetails': (context) => const GiftDetailsPage(),
       '/myEvents': (context) => const MyEventsPage(),
-      '/myGifts': (context) => const MyGiftListPage(),
       '/pledgedGifts': (context) => const MyPledgedGiftsPage(),
       '/addFriend': (context) => const AddFriendPage(),
-      '/editMyGifts': (context) => const EditGiftDetailsPage(),
-      '/editEvents': (context) => const EditEventDetailsPage(),
     },
   ));
 }

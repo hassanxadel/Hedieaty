@@ -98,13 +98,13 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-assets:
-  - assets/images/ahmed.jpeg
-  - assets/images/logo.jpeg
-  - assets/images/nour.jpeg
-  - assets/images/hassan.jpeg
-  - assets/images/sara.jpeg
-  - assets/images/mahmoud.jpeg
-  - assets/images/tarek.jpeg
-  
+  assets:
+    - assets/images/ahmed.jpeg
+    - assets/images/nour.jpeg
+    - assets/images/hassan.jpeg
+    - assets/images/sara.jpeg
+    - assets/images/mahmoud.jpeg
+    - assets/images/tarek.jpeg
+    - assets/images/logo.jpeg
+    - assets/images/default_avatar.jpeg
 

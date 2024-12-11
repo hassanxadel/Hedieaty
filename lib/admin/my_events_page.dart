@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../services/firestore_service.dart';
+import '../theme/app_theme.dart';
+import '../local database/database_helper.dart';
+import '../admin/my_gift_list_page.dart';
 
 class MyEventsPage extends StatefulWidget {
   const MyEventsPage({super.key});
@@ -9,7 +11,6 @@ class MyEventsPage extends StatefulWidget {
 }
 
 class _MyEventsPageState extends State<MyEventsPage> {
-  final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> events = [];
 
   @override
@@ -18,16 +19,16 @@ class _MyEventsPageState extends State<MyEventsPage> {
     _fetchEvents();
   }
 
-  void _fetchEvents() {
-    _firestoreService.getUserEvents().listen((eventList) {
-      setState(() {
-        events = eventList;
-      });
+  Future<void> _fetchEvents() async {
+    final eventList = await DatabaseHelper().getEvents();
+    setState(() {
+      events = eventList;
     });
   }
 
-  void _deleteEvent(String id) {
-    _firestoreService.deleteEvent(id);
+  Future<void> _deleteEvent(int id) async {
+    await DatabaseHelper().deleteEvent(id);
+    _fetchEvents(); // Refresh the list
   }
 
   @override
@@ -35,66 +36,70 @@ class _MyEventsPageState extends State<MyEventsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Events'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/createEventList');
+              _fetchEvents(); // Refresh after returning
+            },
+          ),
+        ],
       ),
-      body: ListView.builder(
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16.0),
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pushNamed(context, '/myGifts');
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    events[index]['name'],
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
+            ],
+          ),
+        ),
+        child: ListView.builder(
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            return Card(
+              margin: const EdgeInsets.all(8.0),
+              child: ListTile(
+                title: Text(events[index]['name']),
+                subtitle: Text(
+                    '${events[index]['category']} - ${events[index]['status']}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () async {
+                        await Navigator.pushNamed(
+                          context,
+                          '/editEvents',
+                          arguments: events[index],
+                        );
+                        _fetchEvents(); // Refresh after editing
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 4.0),
-                  Text(
-                    '${events[index]['category']} - ${events[index]['status']}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/editEvents');
-                        },
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => _deleteEvent(events[index]['id']),
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyGiftListPage(
+                        eventId: events[index]['id'],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteEvent(events[index]['id']),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  );
+                },
               ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/createEventList');
-        },
-        child: const Icon(Icons.add),
+            );
+          },
+        ),
       ),
     );
   }
