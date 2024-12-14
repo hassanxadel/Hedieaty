@@ -18,9 +18,11 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'hedieaty.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (Database db, int version) async {
         await createTables(db);
+        await initializeSampleData();
+        await initializeFriendData();
       },
       onUpgrade: (Database db, int oldVersion, int newVersion) async {
         await db.execute('DROP TABLE IF EXISTS my_gifts');
@@ -97,25 +99,81 @@ class DatabaseHelper {
   }
 
   // Add method to get friend image
-  Future<String?> getFriendImage(String friendName) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db?.query(
-          'friend_images',
-          where: 'friend_name = ?',
-          whereArgs: [friendName.toLowerCase()],
-        ) ??
-        [];
-
-    if (maps.isNotEmpty) {
-      return maps.first['image_path'];
+  Future<String?> getFriendImage(String firstName) async {
+    switch (firstName.toLowerCase()) {
+      case 'hassan':
+        return 'assets/images/hassan.jpeg';
+      case 'tarek':
+        return 'assets/images/tarek.jpeg';
+      case 'sara':
+        return 'assets/images/sara.jpeg';
+      case 'nour':
+        return 'assets/images/nour.jpeg';
+      case 'mahmoud':
+        return 'assets/images/mahmoud.jpeg';
+      case 'ahmed':
+        return 'assets/images/ahmed.jpeg';
+      default:
+        return 'assets/images/default_avatar.jpeg';
     }
-    return null;
   }
 
   Future<void> initializeSampleData() async {
     final db = await database;
     await db?.delete('my_events');
     await db?.delete('my_gifts');
+    await db?.delete('users'); // Clear existing users
+
+    // Add sample users with their emails
+    await insertUser({
+      'email': 'hassanadelh@gmail.com',
+      'firstName': 'Hassan',
+      'lastName': 'Adel',
+      'birthDate': '2000-01-15',
+    });
+
+    await insertUser({
+      'email': 'tarekahmed@gmail.com',
+      'firstName': 'Tarek',
+      'lastName': 'Ahmed',
+      'birthDate': '2001-03-20',
+    });
+
+    await insertUser({
+      'email': 'sarakhaled@gmail.com',
+      'firstName': 'Sara',
+      'lastName': 'Khaled',
+      'birthDate': '2002-07-10',
+    });
+
+    await insertUser({
+      'email': 'nourtawfik@gmail.com',
+      'firstName': 'Nour',
+      'lastName': 'Tawfik',
+      'birthDate': '2004-11-25',
+    });
+
+    await insertUser({
+      'email': 'mahmoudsamir@gmail.com',
+      'firstName': 'Mahmoud',
+      'lastName': 'Samir',
+      'birthDate': '2003-09-05',
+    });
+
+    await insertUser({
+      'email': 'ahmedtamer@gmail.com',
+      'firstName': 'Ahmed',
+      'lastName': 'Tamer',
+      'birthDate': '2003-04-30',
+    });
+
+    // Add Mohamed after the existing users
+    await insertUser({
+      'email': 'mohamedkhaled@gmail.com',
+      'firstName': 'Mohamed',
+      'lastName': 'Khaled',
+      'birthDate': '2002-11-09',
+    });
 
     // Create events
     final event1 = await insertEvent({
@@ -138,32 +196,19 @@ class DatabaseHelper {
 
     // Add gifts with specific eventId
     await insertGift({
-      'name': 'Apple Watch',
+      'name': 'Smart Watch',
       'category': 'Electronics',
+      'description':
+          'Latest model smartwatch with fitness tracking and heart rate monitoring',
       'status': 'Available',
       'eventId': event1,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'PlayStation 5',
-      'category': 'Gaming',
-      'status': 'Pledged',
-      'eventId': event1,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'Diamond Ring',
-      'category': 'Jewelry',
-      'status': 'Available',
-      'eventId': event2,
       'image': null,
     });
 
     await insertGift({
       'name': 'Luxury Watch',
       'category': 'Accessories',
+      'description': 'Classic design stainless steel watch with leather strap',
       'status': 'Pledged',
       'eventId': event2,
       'image': null,
@@ -172,6 +217,8 @@ class DatabaseHelper {
     await insertGift({
       'name': 'MacBook Pro',
       'category': 'Electronics',
+      'description':
+          '16-inch MacBook Pro with M2 chip, perfect for professional work',
       'status': 'Available',
       'eventId': event3,
       'image': null,
@@ -180,8 +227,19 @@ class DatabaseHelper {
     await insertGift({
       'name': 'Professional Camera',
       'category': 'Photography',
+      'description': 'DSLR camera with 24MP sensor and 4K video capability',
       'status': 'Pledged',
       'eventId': event3,
+      'image': null,
+    });
+
+    await insertGift({
+      'name': 'Gaming Console',
+      'category': 'Electronics',
+      'description':
+          'Latest gaming console with two controllers and popular games',
+      'status': 'Available',
+      'eventId': event1,
       'image': null,
     });
 
@@ -231,5 +289,46 @@ class DatabaseHelper {
         image_path TEXT
       )
     ''');
+  }
+
+  Future<void> initializeFriendData() async {
+    final db = await database;
+    await db?.delete('friend_images');
+
+    final List<Map<String, String>> friends = [
+      {'name': 'Hassan', 'image_path': 'assets/images/hassan.jpeg'},
+      {'name': 'Tarek', 'image_path': 'assets/images/tarek.jpeg'},
+      {'name': 'Sara', 'image_path': 'assets/images/sara.jpeg'},
+      {'name': 'Nour', 'image_path': 'assets/images/nour.jpeg'},
+      {'name': 'Mahmoud', 'image_path': 'assets/images/mahmoud.jpeg'},
+      {'name': 'Ahmed', 'image_path': 'assets/images/ahmed.jpeg'},
+    ];
+
+    for (var friend in friends) {
+      await storeFriendImage(friend['name']!, friend['image_path']!);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getUserByEmail(String email) async {
+    final db = await database;
+    return await db!.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+  }
+
+  Future<void> updateUser(Map<String, dynamic> user) async {
+    final db = await database;
+    await db!.update(
+      'users',
+      {
+        'firstName': user['firstName'],
+        'lastName': user['lastName'],
+        'birthDate': user['birthDate'],
+      },
+      where: 'email = ?',
+      whereArgs: [user['email']],
+    );
   }
 }

@@ -143,22 +143,31 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           child: FutureBuilder<String?>(
-                            future: DatabaseHelper()
-                                .getFriendImage(filteredFriends[index]['name']),
+                            future: DatabaseHelper().getFriendImage(
+                                filteredFriends[index]['name']
+                                    .toString()
+                                    .split(' ')[0]),
                             builder: (context, snapshot) {
-                              return CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.white,
-                                onBackgroundImageError:
-                                    (exception, stackTrace) {
-                                  print('Error loading image: $exception');
-                                  print('Stack trace: $stackTrace');
-                                },
-                                backgroundImage: snapshot.hasData
-                                    ? AssetImage(snapshot.data!)
-                                    : const AssetImage(
-                                        'assets/images/default_avatar.jpeg'),
-                              );
+                              if (snapshot.hasData && snapshot.data != null) {
+                                return CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: AssetImage(snapshot.data!),
+                                  onBackgroundImageError: (_, __) {
+                                    print(
+                                        'Error loading image: ${snapshot.data}');
+                                  },
+                                  child: Image.asset(
+                                      'assets/images/default_avatar.jpeg'),
+                                );
+                              } else {
+                                return const CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: AssetImage(
+                                      'assets/images/default_avatar.jpeg'),
+                                );
+                              }
                             },
                           ),
                         ),

@@ -16,6 +16,8 @@ import 'admin/edit_event_list.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'local database/database_helper.dart';
+import 'services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show FieldValue;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,42 @@ void main() async {
 
   final dbHelper = DatabaseHelper();
   await dbHelper.initializeSampleData();
+
+  // Initialize users in Firestore
+  final FirestoreService firestoreService = FirestoreService();
+  final users = await dbHelper.getUsers();
+
+  // Check and add users concurrently
+  await Future.wait(users.map((user) async {
+    final existingUser = await firestoreService.getFriendByEmail(user['email']);
+    if (existingUser == null) {
+      // Add friend
+      final friendRef = await firestoreService.addFriendWithRef({
+        'name': '${user['firstName']} ${user['lastName']}'.trim(),
+        'email': user['email'],
+        'imageUrl':
+            'assets/images/${user['firstName'].toString().toLowerCase()}.jpeg',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Add sample event
+      final eventRef = await friendRef.collection('events').add({
+        'name': 'Birthday',
+        'category': 'Personal',
+        'status': 'Upcoming',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Add sample gift
+      await eventRef.collection('gifts').add({
+        'name': 'Gift Card',
+        'description': 'A special gift card',
+        'price': 100,
+        'isPledged': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }));
 
   runApp(MaterialApp(
     title: 'Hedieaty',

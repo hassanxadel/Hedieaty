@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import '../local database/database_helper.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -10,30 +9,42 @@ class FirestoreService {
 
   // Get all friends
   Stream<List<Map<String, dynamic>>> getFriends() {
+    final currentUser = FirebaseAuth.instance.currentUser;
     return _db
         .collection('friends')
+        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return data;
-            }).toList());
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'],
+              'imageUrl': data['imageUrl'],
+              'phone': data['phone'],
+              'email': data['email'],
+              'timestamp': data['timestamp'],
+            };
+          })
+          .where((friend) => friend['email'] != currentUser?.email)
+          .toList();
+    });
   }
 
   // Add a friend
-  Future<void> addFriend(String name, String imageFileName) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // Store image path in local database
-      await DatabaseHelper()
-          .storeFriendImage(name.toLowerCase(), 'assets/images/$imageFileName');
-
+  Future<void> addFriend(Map<String, dynamic> friendData) async {
+    try {
       await _db.collection('friends').add({
-        'name': name,
-        'events': 0,
-        'addedBy': user.uid,
-        'createdAt': FieldValue.serverTimestamp(),
+        'name': friendData['name'],
+        'email': friendData['email'],
+        'imageUrl': friendData['imageUrl'],
+        'timestamp': friendData['timestamp'],
+        'phone': friendData['phone'] ?? '',
       });
+    } catch (e) {
+      print('Error adding friend: $e');
+      throw Exception('Failed to add friend');
     }
   }
 
@@ -137,6 +148,35 @@ class FirestoreService {
           .collection('events')
           .doc(eventId)
           .delete();
+    }
+  }
+
+  Future<Map<String, dynamic>?> getFriendByEmail(String email) async {
+    final querySnapshot = await _db
+        .collection('friends')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      return querySnapshot.docs.first.data();
+    }
+    return null;
+  }
+
+  Future<DocumentReference> addFriendWithRef(
+      Map<String, dynamic> friendData) async {
+    try {
+      return await _db.collection('friends').add({
+        'name': friendData['name'],
+        'email': friendData['email'],
+        'imageUrl': friendData['imageUrl'],
+        'timestamp': friendData['timestamp'],
+        'phone': friendData['phone'] ?? '',
+      });
+    } catch (e) {
+      print('Error adding friend: $e');
+      throw Exception('Failed to add friend');
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../local database/database_helper.dart';
+import '../theme/app_theme.dart';
 
 class LoginSignupPage extends StatefulWidget {
   const LoginSignupPage({super.key});
@@ -31,6 +32,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         _passwordController.text,
       );
       if (user != null) {
+        await DatabaseHelper().getUserByEmail(_emailController.text);
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
@@ -95,46 +97,147 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isLoginMode ? 'Login' : 'Sign Up')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            if (!_isLoginMode) ...[
-              TextField(
-                controller: _firstNameController,
-                decoration: const InputDecoration(labelText: 'First Name'),
-              ),
-              TextField(
-                controller: _lastNameController,
-                decoration: const InputDecoration(labelText: 'Last Name'),
-              ),
-              TextField(
-                controller: _birthDateController,
-                decoration: const InputDecoration(labelText: 'Birth Date'),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              AppTheme.backgroundColor,
             ],
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoginMode ? _login : _signup,
-              child: Text(_isLoginMode ? 'Login' : 'Sign Up'),
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 50),
+                Image.asset(
+                  'assets/images/logo.jpeg',
+                  height: 150,
+                  width: 150,
+                ),
+                const SizedBox(height: 30),
+                Text(
+                  _isLoginMode ? 'Welcome Back!' : 'Create Account',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _buildTextField(
+                  controller: _emailController,
+                  icon: Icons.email,
+                  label: 'Email',
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _passwordController,
+                  icon: Icons.lock,
+                  label: 'Password',
+                  isPassword: true,
+                ),
+                if (!_isLoginMode) ...[
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _firstNameController,
+                    icon: Icons.person,
+                    label: 'First Name',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _lastNameController,
+                    icon: Icons.person_outline,
+                    label: 'Last Name',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _birthDateController,
+                    icon: Icons.calendar_today,
+                    label: 'Birth Date',
+                  ),
+                ],
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: _isLoginMode ? _login : _signup,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    _isLoginMode ? 'Login' : 'Sign Up',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _isLoginMode
+                          ? "Don't have an account? "
+                          : 'Already have an account? ',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    GestureDetector(
+                      onTap: _toggleMode,
+                      child: Text(
+                        _isLoginMode ? 'Sign Up' : 'Login',
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: _toggleMode,
-              child: Text(_isLoginMode
-                  ? "Don't have an account? Sign Up"
-                  : 'Already have an account? Login'),
-            ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String label,
+    bool isPassword = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: AppTheme.primaryColor),
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
       ),
     );

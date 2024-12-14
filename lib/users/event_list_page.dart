@@ -15,6 +15,13 @@ class _EventListPageState extends State<EventListPage> {
   final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> events = [];
 
+  void _sortEvents(String criteria) {
+    setState(() {
+      events.sort(
+          (a, b) => a[criteria].toString().compareTo(b[criteria].toString()));
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +40,20 @@ class _EventListPageState extends State<EventListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Event List'),
+        title: const Text('Events'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: _sortEvents,
+            itemBuilder: (BuildContext context) {
+              return {'name', 'category', 'status'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text('Sort by $choice'),
+                );
+              }).toList();
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(

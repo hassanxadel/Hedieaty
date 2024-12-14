@@ -29,17 +29,19 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _fetchUserData() async {
-    final users = await DatabaseHelper().getUsers();
-    print('Fetched Users: $users'); // Debugging purpose
-    if (users.isNotEmpty) {
-      setState(() {
-        _emailController.text = users[0]['email'] ?? '';
-        _firstNameController.text = users[0]['firstName'] ?? '';
-        _lastNameController.text = users[0]['lastName'] ?? '';
-        _birthDateController.text = users[0]['birthDate'] ?? '';
-      });
-    } else {
-      print('No user data found in local database.');
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      final users = await DatabaseHelper().getUserByEmail(currentUser.email!);
+      if (users.isNotEmpty) {
+        setState(() {
+          _emailController.text = users[0]['email'] ?? '';
+          _firstNameController.text = users[0]['firstName'] ?? '';
+          _lastNameController.text = users[0]['lastName'] ?? '';
+          _birthDateController.text = users[0]['birthDate'] ?? '';
+        });
+      } else {
+        print('No user data found for email: ${currentUser.email}');
+      }
     }
   }
 
@@ -58,7 +60,21 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: () => setState(() => _isEditing = !_isEditing),
+            onPressed: () async {
+              if (_isEditing) {
+                // Save the changes
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser != null) {
+                  await DatabaseHelper().updateUser({
+                    'email': currentUser.email!,
+                    'firstName': _firstNameController.text,
+                    'lastName': _lastNameController.text,
+                    'birthDate': _birthDateController.text,
+                  });
+                }
+              }
+              setState(() => _isEditing = !_isEditing);
+            },
           ),
         ],
       ),
@@ -77,10 +93,14 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 50,
                 backgroundColor: AppTheme.primaryColor,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
+                backgroundImage: AssetImage(
+                  _firstNameController.text.isEmpty
+                      ? 'assets/images/default_avatar.jpeg'
+                      : 'assets/images/${_firstNameController.text.toLowerCase()}.jpeg',
+                ),
               ),
               const SizedBox(height: 24),
               _buildProfileField(
@@ -140,7 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           TextField(
             controller: controller,
-            enabled: isEditing,
+            enabled: isEditing && label != 'Email',
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
@@ -204,7 +224,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-
           const SizedBox(height: 16.0),
           GestureDetector(
             onTap: () {

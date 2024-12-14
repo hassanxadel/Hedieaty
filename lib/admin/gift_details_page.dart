@@ -14,6 +14,7 @@ class GiftDetailsPage extends StatefulWidget {
 class _GiftDetailsPageState extends State<GiftDetailsPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   bool _isPledged = false;
   File? _image;
 
@@ -33,13 +34,24 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       final gift = {
         'name': _nameController.text,
         'category': _categoryController.text,
+        'description': _descriptionController.text,
         'status': _isPledged ? 'Pledged' : 'Available',
         'eventId': widget.eventId,
         'image': _image != null ? await _image!.readAsBytes() : null,
       };
 
       await DatabaseHelper().insertGift(gift);
-      Navigator.pop(context);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } else {
+      // Show error message if required fields are empty
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -53,15 +65,31 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: const InputDecoration(
+                labelText: 'Name*',
+                hintText: 'Enter gift name',
+              ),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _categoryController,
-              decoration: const InputDecoration(labelText: 'Category'),
+              decoration: const InputDecoration(
+                labelText: 'Category*',
+                hintText: 'Enter gift category',
+              ),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Enter gift description',
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
             SwitchListTile(
-              title: const Text('Gift Status'),
-              subtitle: Text(_isPledged ? 'Pledged' : 'Available'),
+              title: const Text('Pledged'),
               value: _isPledged,
               onChanged: (bool value) {
                 setState(() {
@@ -85,10 +113,13 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                       ),
                     ],
                   ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _saveGiftDetails,
-              child: const Text('Save Gift'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _saveGiftDetails,
+                child: const Text('Save Gift'),
+              ),
             ),
           ],
         ),
