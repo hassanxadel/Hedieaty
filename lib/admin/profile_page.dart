@@ -3,6 +3,8 @@ import '../local database/database_helper.dart';
 import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'my_gift_list_page.dart';
+import '../services/firestore_service.dart';
+import '../validators.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,11 +17,15 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
   bool _notificationsEnabled = false;
   List<Map<String, dynamic>> events = [];
+  String _profileImageUrl = '';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _birthDateController = TextEditingController();
+
+  final FirestoreService _firestoreService = FirestoreService();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -33,14 +39,24 @@ class _ProfilePageState extends State<ProfilePage> {
     if (currentUser != null) {
       final users = await DatabaseHelper().getUserByEmail(currentUser.email!);
       if (users.isNotEmpty) {
+        final userData = users[0];
         setState(() {
-          _emailController.text = users[0]['email'] ?? '';
-          _firstNameController.text = users[0]['firstName'] ?? '';
-          _lastNameController.text = users[0]['lastName'] ?? '';
-          _birthDateController.text = users[0]['birthDate'] ?? '';
+          _emailController.text = userData['email'] ?? '';
+          _firstNameController.text = userData['firstName'] ?? '';
+          _lastNameController.text = userData['lastName'] ?? '';
+          _birthDateController.text = userData['birthDate'] ?? '';
+
+          // Get image based on first name without fallback
+          DatabaseHelper()
+              .getFriendImage(userData['firstName'])
+              .then((imagePath) {
+            if (imagePath != null) {
+              setState(() {
+                _profileImageUrl = imagePath;
+              });
+            }
+          });
         });
-      } else {
-        print('No user data found for email: ${currentUser.email}');
       }
     }
   }
@@ -62,15 +78,14 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
             onPressed: () async {
               if (_isEditing) {
-                // Save the changes
                 final currentUser = FirebaseAuth.instance.currentUser;
                 if (currentUser != null) {
-                  await DatabaseHelper().updateUser({
-                    'email': currentUser.email!,
-                    'firstName': _firstNameController.text,
-                    'lastName': _lastNameController.text,
-                    'birthDate': _birthDateController.text,
-                  });
+                  await _firestoreService.createUserProfile(
+                    currentUser.email!,
+                    _firstNameController.text,
+                    _lastNameController.text,
+                    _birthDateController.text,
+                  );
                 }
               }
               setState(() => _isEditing = !_isEditing);
@@ -81,11 +96,11 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryColor.withOpacity(0.1),
-              AppTheme.backgroundColor,
+              AppTheme.primaryColor.withOpacity(0.8),
+              AppTheme.secondaryColor
             ],
           ),
         ),
@@ -96,19 +111,47 @@ class _ProfilePageState extends State<ProfilePage> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: AppTheme.primaryColor,
-                backgroundImage: AssetImage(
-                  _firstNameController.text.isEmpty
-                      ? 'assets/images/default_avatar.jpeg'
-                      : 'assets/images/${_firstNameController.text.toLowerCase()}.jpeg',
-                ),
+                backgroundImage: _profileImageUrl.isNotEmpty
+                    ? AssetImage(_profileImageUrl)
+                    : null,
               ),
               const SizedBox(height: 24),
-              _buildProfileField(
-                  'First Name', _firstNameController, _isEditing),
-              _buildProfileField('Last Name', _lastNameController, _isEditing),
-              _buildProfileField('Email', _emailController, _isEditing),
-              _buildProfileField(
-                  'Birth Date', _birthDateController, _isEditing),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _emailController,
+                      validator: Validators.validateEmail,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        errorStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _firstNameController,
+                      validator: (value) =>
+                          Validators.validateRequired(value, 'First name'),
+                      decoration:
+                          const InputDecoration(labelText: 'First Name'),
+                    ),
+                    TextFormField(
+                      controller: _lastNameController,
+                      validator: (value) =>
+                          Validators.validateRequired(value, 'Last name'),
+                      decoration: const InputDecoration(labelText: 'Last Name'),
+                    ),
+                    TextFormField(
+                      controller: _birthDateController,
+                      validator: Validators.validateDate,
+                      decoration:
+                          const InputDecoration(labelText: 'Birth Date'),
+                    ),
+                    // ... other form fields
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               _buildSettingsSection(),
               _buildNavigationButtons(context),
@@ -116,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton.icon(
                 onPressed: () {
                   FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, '/loginSignup');
+                  Navigator.pushReplacementNamed(context, '/login');
                 },
                 icon: const Icon(Icons.logout, color: Colors.white),
                 label: const Text('Logout'),
@@ -135,8 +178,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildProfileField(
       String label, TextEditingController controller, bool isEditing) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -158,16 +201,19 @@ class _ProfilePageState extends State<ProfilePage> {
               color: Colors.grey,
             ),
           ),
-          TextField(
-            controller: controller,
-            enabled: isEditing && label != 'Email',
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          SizedBox(
+            height: 35,
+            child: TextField(
+              controller: controller,
+              enabled: isEditing && label != 'Email',
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -219,8 +265,15 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('My Pledged Gifts List'),
-                Icon(Icons.arrow_forward_ios),
+                Text(
+                  'My Pledged Gifts List',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white),
               ],
             ),
           ),
@@ -232,8 +285,15 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('My List of Events'),
-                Icon(Icons.arrow_forward_ios),
+                Text(
+                  'My List of Events',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white),
               ],
             ),
           ),

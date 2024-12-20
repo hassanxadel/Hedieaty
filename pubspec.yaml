@@ -30,20 +30,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.2
-  image_picker: ^0.8.4+3
-  shared_preferences: ^2.0.15
-  cupertino_icons: ^1.0.8
-  sqflite: ^2.0.0+3
-  path: ^1.8.0
-  firebase_core: ^3.2.0
-  firebase_auth: ^5.1.2
-  cloud_firestore: ^5.1.0
-  firebase_storage: ^12.1.1
-  firebase_database: ^11.0.3
-  firebase_analytics: ^11.2.0
-  cloud_functions: ^5.0.3
+  cupertino_icons: ^1.0.6
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
+  firebase_app_check: ^0.2.1+8
   google_fonts: ^6.1.0
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.1
+  image_picker: ^1.0.4
+  shared_preferences: ^2.2.2
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
@@ -99,12 +98,13 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   assets:
-    - assets/images/ahmed.jpeg
-    - assets/images/nour.jpeg
-    - assets/images/hassan.jpeg
-    - assets/images/sara.jpeg
-    - assets/images/mahmoud.jpeg
     - assets/images/tarek.jpeg
-    - assets/images/logo.jpeg
+    - assets/images/ahmed.jpeg
+    - assets/images/mohamed.jpeg
+    - assets/images/sara.jpeg
+    - assets/images/nour.jpeg
+    - assets/images/mahmoud.jpeg
+    - assets/images/hassan.jpeg
     - assets/images/default_avatar.jpeg
+    - assets/images/logo.jpeg
 

@@ -18,16 +18,8 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'hedieaty.db');
     return await openDatabase(
       path,
-      version: 4,
+      version: 1,
       onCreate: (Database db, int version) async {
-        await createTables(db);
-        await initializeSampleData();
-        await initializeFriendData();
-      },
-      onUpgrade: (Database db, int oldVersion, int newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS my_gifts');
-        await db.execute('DROP TABLE IF EXISTS my_events');
-        await db.execute('DROP TABLE IF EXISTS friend_images');
         await createTables(db);
       },
     );
@@ -113,137 +105,46 @@ class DatabaseHelper {
         return 'assets/images/mahmoud.jpeg';
       case 'ahmed':
         return 'assets/images/ahmed.jpeg';
+      case 'mohamed':
+        return 'assets/images/mohamed.jpeg';
       default:
-        return 'assets/images/default_avatar.jpeg';
+        return 'assets/images/default_avatar';
     }
   }
 
   Future<void> initializeSampleData() async {
     final db = await database;
-    await db?.delete('my_events');
-    await db?.delete('my_gifts');
-    await db?.delete('users'); // Clear existing users
+    if (db == null) return;
 
-    // Add sample users with their emails
-    await insertUser({
-      'email': 'hassanadelh@gmail.com',
-      'firstName': 'Hassan',
-      'lastName': 'Adel',
-      'birthDate': '2000-01-15',
+    await db.transaction((txn) async {
+      // Clear existing data
+      await txn.delete('users');
+      await txn.delete('my_events');
+      await txn.delete('my_gifts');
+
+      // Add sample user
+      await txn.insert('users', {
+        'email': 'hassanadelh@gmail.com',
+        'firstName': 'Hassan',
+        'lastName': 'Adel',
+        'birthDate': '2000-01-15',
+      });
+
+      final eventId = await txn.insert('my_events', {
+        'name': 'Birthdayyy Party',
+        'category': 'Birthday',
+        'status': 'Upcoming'
+      });
+
+      // Add sample gift
+      await txn.insert('my_gifts', {
+        'name': 'Birthday Gift',
+        'category': 'Electronics',
+        'status': 'Avaliable',
+        'description': 'A nice gift',
+        'eventId': eventId,
+      });
     });
-
-    await insertUser({
-      'email': 'tarekahmed@gmail.com',
-      'firstName': 'Tarek',
-      'lastName': 'Ahmed',
-      'birthDate': '2001-03-20',
-    });
-
-    await insertUser({
-      'email': 'sarakhaled@gmail.com',
-      'firstName': 'Sara',
-      'lastName': 'Khaled',
-      'birthDate': '2002-07-10',
-    });
-
-    await insertUser({
-      'email': 'nourtawfik@gmail.com',
-      'firstName': 'Nour',
-      'lastName': 'Tawfik',
-      'birthDate': '2004-11-25',
-    });
-
-    await insertUser({
-      'email': 'mahmoudsamir@gmail.com',
-      'firstName': 'Mahmoud',
-      'lastName': 'Samir',
-      'birthDate': '2003-09-05',
-    });
-
-    await insertUser({
-      'email': 'ahmedtamer@gmail.com',
-      'firstName': 'Ahmed',
-      'lastName': 'Tamer',
-      'birthDate': '2003-04-30',
-    });
-
-    // Add Mohamed after the existing users
-    await insertUser({
-      'email': 'mohamedkhaled@gmail.com',
-      'firstName': 'Mohamed',
-      'lastName': 'Khaled',
-      'birthDate': '2002-11-09',
-    });
-
-    // Create events
-    final event1 = await insertEvent({
-      'name': 'Birthday Party',
-      'category': 'Personal',
-      'status': 'Upcoming',
-    });
-
-    final event2 = await insertEvent({
-      'name': 'Wedding Anniversary',
-      'category': 'Celebration',
-      'status': 'Planning',
-    });
-
-    final event3 = await insertEvent({
-      'name': 'Graduation Ceremony',
-      'category': 'Academic',
-      'status': 'Upcoming',
-    });
-
-    // Add gifts with specific eventId
-    await insertGift({
-      'name': 'Smart Watch',
-      'category': 'Electronics',
-      'description':
-          'Latest model smartwatch with fitness tracking and heart rate monitoring',
-      'status': 'Available',
-      'eventId': event1,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'Luxury Watch',
-      'category': 'Accessories',
-      'description': 'Classic design stainless steel watch with leather strap',
-      'status': 'Pledged',
-      'eventId': event2,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'MacBook Pro',
-      'category': 'Electronics',
-      'description':
-          '16-inch MacBook Pro with M2 chip, perfect for professional work',
-      'status': 'Available',
-      'eventId': event3,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'Professional Camera',
-      'category': 'Photography',
-      'description': 'DSLR camera with 24MP sensor and 4K video capability',
-      'status': 'Pledged',
-      'eventId': event3,
-      'image': null,
-    });
-
-    await insertGift({
-      'name': 'Gaming Console',
-      'category': 'Electronics',
-      'description':
-          'Latest gaming console with two controllers and popular games',
-      'status': 'Available',
-      'eventId': event1,
-      'image': null,
-    });
-
-    // Add more gifts for other events...
   }
 
   Future<List<Map<String, dynamic>>> getGiftsByEventId(int eventId) async {
@@ -257,35 +158,43 @@ class DatabaseHelper {
   }
 
   Future<void> createTables(Database db) async {
-    // First create my_events table
+    // Create users table
     await db.execute('''
-      CREATE TABLE my_events(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        status TEXT NOT NULL
+      CREATE TABLE IF NOT EXISTS users (
+        email TEXT PRIMARY KEY,
+        firstName TEXT,
+        lastName TEXT,
+        birthDate TEXT
       )
     ''');
 
-    // Then create my_gifts table with image column
+    // Create events table
     await db.execute('''
-      CREATE TABLE my_gifts(
+      CREATE TABLE IF NOT EXISTS my_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        status TEXT NOT NULL,
+        name TEXT,
+        category TEXT,
+        status TEXT
+      )
+    ''');
+
+    // Create gifts table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS my_gifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        category TEXT,
+        status TEXT,
         description TEXT,
         eventId INTEGER,
-        image BLOB,
-        FOREIGN KEY (eventId) REFERENCES my_events(id) ON DELETE CASCADE
+        FOREIGN KEY (eventId) REFERENCES my_events (id)
       )
     ''');
 
     // Create friend_images table
     await db.execute('''
-      CREATE TABLE friend_images(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        friend_name TEXT UNIQUE,
+      CREATE TABLE IF NOT EXISTS friend_images (
+        friend_name TEXT PRIMARY KEY,
         image_path TEXT
       )
     ''');
@@ -295,16 +204,17 @@ class DatabaseHelper {
     final db = await database;
     await db?.delete('friend_images');
 
-    final List<Map<String, String>> friends = [
+    final List<Map<String, String>> myfriends = [
       {'name': 'Hassan', 'image_path': 'assets/images/hassan.jpeg'},
       {'name': 'Tarek', 'image_path': 'assets/images/tarek.jpeg'},
       {'name': 'Sara', 'image_path': 'assets/images/sara.jpeg'},
       {'name': 'Nour', 'image_path': 'assets/images/nour.jpeg'},
       {'name': 'Mahmoud', 'image_path': 'assets/images/mahmoud.jpeg'},
       {'name': 'Ahmed', 'image_path': 'assets/images/ahmed.jpeg'},
+      {'name': 'Mohamed', 'image_path': 'assets/images/mohamed.jpeg'},
     ];
 
-    for (var friend in friends) {
+    for (var friend in myfriends) {
       await storeFriendImage(friend['name']!, friend['image_path']!);
     }
   }
@@ -330,5 +240,28 @@ class DatabaseHelper {
       where: 'email = ?',
       whereArgs: [user['email']],
     );
+  }
+
+  static Future<void> initialize() async {
+    try {
+      final instance = DatabaseHelper();
+      final db = await instance._initDatabase();
+
+      // Create tables first
+      await instance.createTables(db);
+
+      // Then check for data
+      final List<Map<String, dynamic>> users = await db.query('users');
+      if (users.isEmpty) {
+        await instance.initializeSampleData();
+        await instance.initializeFriendData();
+        print('Database initialized with sample data');
+      } else {
+        print('Database already contains data');
+      }
+    } catch (e) {
+      print('Database initialization error: $e');
+      rethrow;
+    }
   }
 }

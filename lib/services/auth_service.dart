@@ -12,8 +12,26 @@ class AuthService {
         email: email,
         password: password,
       );
+
+      // Verify user exists in Firestore
+      final userDoc =
+          await _firestore.collection('users').doc(result.user!.uid).get();
+      if (!userDoc.exists) {
+        throw Exception('User not found in database');
+      }
+
+      // Convert the data to Map<String, dynamic> explicitly
+      final userData = userDoc.data() as Map<String, dynamic>;
+
+      // Instead of trying to cast to PigeonUserDetails, just use the Map
+      if (!userData.containsKey('first_name') ||
+          !userData.containsKey('last_name')) {
+        throw Exception('Invalid user data format');
+      }
+
       return result.user;
     } catch (e) {
+      print('Sign in error: $e');
       throw Exception(e.toString());
     }
   }

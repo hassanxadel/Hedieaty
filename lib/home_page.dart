@@ -18,17 +18,49 @@ class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
   bool isLoading = true;
   String? error;
+  bool _firestoreInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _setupFriendsListener();
+    _initializeFirestore();
     searchController.addListener(() {
       filterFriends();
     });
   }
 
+  Future<void> _initializeFirestore() async {
+    try {
+      int maxAttempts = 3;
+      int currentAttempt = 0;
+      bool connected = false;
+
+      while (!connected && currentAttempt < maxAttempts) {
+        try {
+          await _firestoreService.initializeFirestore();
+          connected = true;
+          setState(() => _firestoreInitialized = true);
+          _setupFriendsListener();
+        } catch (e) {
+          currentAttempt++;
+          if (currentAttempt < maxAttempts) {
+            // Wait before retrying (exponential backoff)
+            await Future.delayed(Duration(seconds: currentAttempt * 2));
+          } else {
+            rethrow;
+          }
+        }
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Failed to connect to Firebase: $e';
+        isLoading = false;
+      });
+    }
+  }
+
   void _setupFriendsListener() {
+    if (!_firestoreInitialized) return;
     _firestoreService.getFriends().listen(
       (friendsList) {
         setState(() {
@@ -50,16 +82,90 @@ class _HomePageState extends State<HomePage> {
   void filterFriends() {
     setState(() {
       if (searchController.text.isEmpty) {
-        filteredFriends = List.from(friends);
+        filteredFriends =
+            friends.where((friend) => friend['source'] == 'firestore').toList();
       } else {
         filteredFriends = friends
-            .where((friend) => friend['name']
-                .toString()
-                .toLowerCase()
-                .contains(searchController.text.toLowerCase()))
+            .where((friend) =>
+                friend['name']
+                    .toString()
+                    .toLowerCase()
+                    .contains(searchController.text.toLowerCase()) &&
+                friend['source'] == 'firestore')
             .toList();
       }
     });
+  }
+
+  Widget _buildFriendCard(Map<String, dynamic> friend) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: InkWell(
+        onTap: () => _navigateToEvents(friend['id']),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.primaryColor.withOpacity(0.8),
+                AppTheme.secondaryColor
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: AssetImage(friend['image']),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friend['name'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Events: ${friend['eventsCount']}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEvents(String friendId) {
+    Navigator.pushNamed(
+      context,
+      '/events',
+      arguments: {'friendId': friendId},
+    );
   }
 
   @override
@@ -70,7 +176,22 @@ class _HomePageState extends State<HomePage> {
       mainContent = const Center(child: CircularProgressIndicator());
     } else if (error != null) {
       mainContent = Center(
-        child: Text(error!, style: const TextStyle(color: Colors.red)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error: $error'),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  error = null;
+                  isLoading = true;
+                });
+                _initializeFirestore();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       );
     } else if (filteredFriends.isEmpty) {
       mainContent = const Center(
@@ -95,7 +216,7 @@ class _HomePageState extends State<HomePage> {
               Navigator.pushNamed(
                 context,
                 '/events',
-                arguments: {'friendId': friends[index]['id']},
+                arguments: {'friendId': filteredFriends[index]['id']},
               );
             },
             child: Container(
@@ -157,15 +278,11 @@ class _HomePageState extends State<HomePage> {
                                     print(
                                         'Error loading image: ${snapshot.data}');
                                   },
-                                  child: Image.asset(
-                                      'assets/images/default_avatar.jpeg'),
                                 );
                               } else {
                                 return const CircleAvatar(
                                   radius: 40,
                                   backgroundColor: Colors.white,
-                                  backgroundImage: AssetImage(
-                                      'assets/images/default_avatar.jpeg'),
                                 );
                               }
                             },
@@ -208,7 +325,7 @@ class _HomePageState extends State<HomePage> {
                 IconButton(
                     icon: const Icon(Icons.person_add),
                     onPressed: () {
-                      Navigator.pushNamed(context, '/addFriend');
+                      Navigator.pushNamed(context, '/addfriend');
                     }),
               ],
             ),

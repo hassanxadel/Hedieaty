@@ -160,7 +160,7 @@ class _MyGiftListPageState extends State<MyGiftListPage> {
                                 onPressed: () async {
                                   await Navigator.pushNamed(
                                     context,
-                                    '/editMyGifts',
+                                    '/editmygifts',
                                     arguments: myGifts[index],
                                   );
                                   _fetchGifts();

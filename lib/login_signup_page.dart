@@ -27,16 +27,22 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     }
 
     try {
-      var user = await _authService.signIn(
-        _emailController.text,
+      final user = await _authService.signIn(
+        _emailController.text.trim(),
         _passwordController.text,
       );
-      if (user != null) {
-        await DatabaseHelper().getUserByEmail(_emailController.text);
+
+      if (user != null && mounted) {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
-      _showSnackBar('Login failed: $e');
+      if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.contains('PigeonUserDetails')) {
+          errorMessage = 'Error accessing user data. Please try again.';
+        }
+        _showSnackBar('Login failed: $errorMessage');
+      }
     }
   }
 

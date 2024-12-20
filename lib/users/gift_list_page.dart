@@ -31,10 +31,20 @@ class _GiftListPageState extends State<GiftListPage> {
     });
   }
 
-  void _isPledgedGift(int index) {
-    setState(() {
-      gifts[index]['status'] = 'Pledged';
-    });
+  void _isPledgedGift(int index) async {
+    final gift = gifts[index];
+    print('Pledging gift: $gift');
+
+    await _firestoreService.addPledgedGift({
+      'name': gift['name'],
+      'friend': gift['friend'],
+      'dueDate': gift['dueDate'],
+      'status': 'Pending',
+      'id': gift['id']
+    }, widget.friendId, widget.eventId, gift['id']);
+
+    await _firestoreService.updateGiftStatus(
+        widget.friendId, widget.eventId, gift['id'], 'Pledged');
   }
 
   void _sortGifts(String criteria) {

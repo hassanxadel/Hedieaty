@@ -7,10 +7,10 @@ class EditEventDetailsPage extends StatefulWidget {
   const EditEventDetailsPage({super.key, this.eventData});
 
   @override
-  _editEventDetailsPageState createState() => _editEventDetailsPageState();
+  _EditEventDetailsPageState createState() => _EditEventDetailsPageState();
 }
 
-class _editEventDetailsPageState extends State<EditEventDetailsPage> {
+class _EditEventDetailsPageState extends State<EditEventDetailsPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _statusController = TextEditingController();
@@ -39,8 +39,17 @@ class _editEventDetailsPageState extends State<EditEventDetailsPage> {
 
       if (eventId != null) {
         await DatabaseHelper().updateEvent(eventId!, event);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event updated successfully')),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
       }
-      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
     }
   }
 
@@ -51,24 +60,40 @@ class _editEventDetailsPageState extends State<EditEventDetailsPage> {
         title: const Text('Edit Event Details'),
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: const InputDecoration(
+                labelText: 'Event Name',
+                border: OutlineInputBorder(),
+              ),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _categoryController,
-              decoration: const InputDecoration(labelText: 'Category'),
+              decoration: const InputDecoration(
+                labelText: 'Category',
+                border: OutlineInputBorder(),
+              ),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _statusController,
-              decoration: const InputDecoration(labelText: 'Status'),
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+              ),
             ),
-            ElevatedButton(
-              onPressed: _saveEventDetails,
-              child: const Text('Edit'),
-            )
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _saveEventDetails,
+                child: const Text('Save Changes'),
+              ),
+            ),
           ],
         ),
       ),
